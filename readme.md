@@ -18,3 +18,11 @@ A hobby project by Ali Ahmed :)
 - Draw on screen by pressing 'D'
 - Clear screen drawing by pressing 'C'
 - Exit drawing mode by pressing 'spacebar'
+### Unresolved Issues:
+Due to lack of time, some minor issues are unresolved
+1. Pixel index out of range error when the path tries to 
+   search at the corner of the screen.
+   - Fix by setting limits 
+2. Memory problem, inserting too many nodes causes the 
+   screen to freeze (Not responding), then suddenly ends by 
+   finding a path
