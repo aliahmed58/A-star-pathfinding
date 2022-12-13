@@ -25,7 +25,8 @@ Visualizing the A* search algorithm in pygame. :)
     goal node
 - Reset the screen by pressing `R`
 - Draw walls on the screen by pressing `D`
-- Clear walls drawn on screen by pressing `C`
+- Clear walls drawn on screen by pressing `C` and 
+  hovering over the walls.
 - Exit drawing mode by pressing `Spacebar`
 - To start visualizing search, press `Enter` : only 
   after start and goal node has been set.
