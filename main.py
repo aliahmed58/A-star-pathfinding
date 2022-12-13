@@ -1,17 +1,17 @@
-import pygame
-from constants import *
 from draw import *
+from constants import *
 
 def main():
     pygame.init()
 
     draw = Draw()
     screen.fill(WHITE)
+    run = True
 
-    while True:
+    while run:
         draw_grid()
         for event in pygame.event.get():
-            if event.type == 256: pygame.quit()
+            if event.type == pygame.QUIT: run = False
             # set start node
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_s: draw.s, draw.g = True, False
@@ -32,6 +32,8 @@ def main():
                 if draw.draw or draw.erase:
                     draw.draw_blocks(event)
         pygame.display.update()
+
+    pygame.quit()
 
 
 main()

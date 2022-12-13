@@ -14,5 +14,6 @@ WIN_WIDTH = 1200
 BLOCK_SIZE = 40
 FONT_SIZE = 12
 SPEED = 50
+diagonal_allowed = False
 screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
 clock = pygame.time.Clock()

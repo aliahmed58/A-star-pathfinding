@@ -1,6 +1,4 @@
 import math
-
-import pygame
 from constants import *
 from Node import Node
 
@@ -26,7 +24,7 @@ def calc_cord(pos):
     x_val -= x_remainder
     y_val -= y_remainder
 
-    return x_val, y_val
+    return int(x_val), int(y_val)
 
 
 # Fill a rectangle given its position and color
@@ -51,8 +49,8 @@ class Draw:
         self.start_set = False
         self.goal_found = False
         self.goal_set = False
-        self.start_pos = (None, None)
-        self.goal_pos = (None, None)
+        self.start_pos = (0, 0)
+        self.goal_pos = (0, 0)
         self.curr_pos = (None, None)
         self.s, self.g = True, False
 
@@ -103,6 +101,7 @@ class Draw:
             pygame.display.update()
 
     def a_star(self):
+        # get font
         font = pygame.font.Font('./raleway.ttf', FONT_SIZE)
         if not self.goal_set or not self.start_set:
             return
@@ -110,34 +109,48 @@ class Draw:
         if self.start_pos == self.goal_pos:
             return
 
-        open = []
-        close = []
-        start_node = Node(self.start_pos)
-        goal_node = Node(self.goal_pos)
+        # open list to keep track of nodes to be discovered
+        open_list = []
+        # close list to keep track of nodes already discovered
+        close_list = []
+        # create start node
 
-        goal_node.g_cost = (0, 0)
-        goal_node.h_cost = (0, 0)
-        start_node.g_cost = (goal_node.pos[0] - start_node.pos[0], goal_node.pos[1] -
-                             start_node.pos[1])
+        start_node = Node(self.start_pos[0], self.start_pos[1])
 
-        open.append(start_node)
+        # add the start node to open list
+        open_list.append(start_node)
+
+        # path list to store path after node is found
         path = []
 
+        # move time variable
         move_time = 0
 
-        while len(open) != 0:
+        while len(open_list) != 0:
+            # get the current time from pygame
             curr_time = pygame.time.get_ticks()
+
+            # only execute the following code after certain intervals
             if curr_time > move_time:
+
+                # change move time each loop based on SPEED in constants.py
                 move_time = curr_time + SPEED
 
-                open.sort(key=lambda z: z.total_cost)
+                # sort the open list for the nodes with the lowest cost on top
+                open_list.sort(key=lambda z: z.total_cost)
 
-                node = open.pop(0)
-                close.append(node)
+                # get the node with the lowest total cost
+                node = open_list.pop(0)
 
-                self.curr_pos = node.pos
+                # add the node to close list since it doesn't need to be looked at again
+                close_list.append(node)
 
-                if node.pos == self.goal_pos:
+                # set the curr position to the selected node
+                self.curr_pos = (node.x, node.y)
+
+                # if goal node is found - calculate path by back tracking the nodes using their
+                # parents set during the search
+                if node.x == self.goal_pos[0] and node.y == self.goal_pos[1]:
                     path = []
                     current = node
                     while current is not None:
@@ -145,81 +158,149 @@ class Draw:
                         current = current.parent
                     break
 
-                if node.pos != self.start_pos: set_rect(node.pos, BLUE)
+                # draw the rectangle on screen
+                node_pos = (node.x, node.y)
+                if node_pos != self.start_pos: set_rect(node_pos, BLUE)
 
-                x, y = int(node.pos[0]), int(node.pos[1])
+                # get neighbouring cells
+                neighbors = self.get_blocks((node.x, node.y))
+                for cell in neighbors:
 
-                neighbors = self.get_blocks(self, node.pos)
-                for box in neighbors:
-                    if is_pixel_black(box.pos):
-                        if box.diagonal:
-                            h_cost = 2
+                    # if cell is already in close list, skip
+                    if cell in close_list:
+                        continue
+
+                    # check if the adjacent block is a valid cell
+                    if is_cell_valid((cell.x, cell.y)):
+                        # if the cell is diagonal give it a higher g_cost +
+                        # the selected node's g_cost
+                        if cell.diagonal:
+                            cell.g_cost = node.g_cost + 14
                         else:
-                            h_cost = 1
+                            cell.g_cost = node.g_cost + 10
+                    # if the cell is invalid, skip
+                    else:
+                        continue
 
-                        g_cost = abs(box.pos[0] - self.goal_pos[0]) + abs(box.pos[1] -
-                                                                          self.goal_pos[1])
-                        total_cost = h_cost + g_cost
-                        new_x, new_y = calc_cord(box.pos)
-                        ins = Node((new_x, new_y))
+                    dx = abs(cell.x - self.goal_pos[0])
+                    dy = abs(cell.y - self.goal_pos[1])
 
-                        ins.parent = node
+                    # calculate the h cost by using manhattan distance
+                    # cell.h_cost = BLOCK_SIZE * (dx + dy) + 20 * min(dx, dy)
+                    cell.h_cost = dx + dy
+                    # set the total cost as g + h
+                    cell.total_cost = cell.h_cost + cell.g_cost
 
-                        ins.h_cost = h_cost
-                        ins.g_cost = g_cost
-                        ins.total_cost = total_cost
+                    # set the neighbour cell parent as current selected node
+                    cell.parent = node
 
-                        if ins.pos != self.start_pos and ins.pos != self.goal_pos: set_rect(ins.pos,
-                                                                                       CYAN)
-                        t_surface = font.render(str(int(total_cost)), False, BLACK)
-                        screen.blit(t_surface, (box.pos[0] - 10, box.pos[1]))
+                    # check if the cell is already in open list
+                    # if already found, compare it's g_cost with the current cell
+                    if cell in open_list:
+                        index = open_list.index(cell)
+                        exists = open_list[index]
+                        if exists.g_cost > cell.g_cost:
+                            open_list.remove(exists)
+                            open_list.append(cell)
 
-                        if ins not in open and ins not in close:
-                            open.append(ins)
+                    else:
+                        # insert in open list if not present
+                        open_list.append(cell)
+
+                    # if the neighbouring node is not goal or start draw a CYAN cell
+                    if (cell.x, cell.y) != self.start_pos and (cell.x, cell.y) != self.goal_pos:
+                        set_rect((cell.x, cell.y), CYAN)
+
+                    t_surface = font.render(str(int(cell.total_cost)), False, BLACK)
+                    screen.blit(t_surface, (cell.x - 10, cell.y))
 
                 pygame.display.flip()
 
+        # Draw path in the list
         for x in path:
-            if x.pos != self.start_pos and x.pos != self.goal_pos: set_rect(x.pos, PINK)
+            if (x.x, x.y) != self.start_pos and (x.x, x.y) != self.goal_pos: set_rect((x.x, x.y),
+                                                                                      PINK)
 
     @staticmethod
-    def get_blocks(self, pos):
+    def get_blocks(pos):
+        # fetch x and y pos and convert to int
         x, y = pos
         x, y = int(x), int(y)
 
-        left = Node(calc_center(x - 2, y + 2))
-
-        right = Node(calc_center(x + BLOCK_SIZE + 2, y + 2))
-        top = Node(calc_center(x + 2, y - 2))
-        bottom = Node(calc_center(x + 2, y + BLOCK_SIZE + 2))
+        # LEFT of current cell
+        pos_x, pos_y = calc_cord((x - 2, y + 2))
+        left = Node(pos_x, pos_y)
+        # RIGHT of current cell
+        pos_x, pos_y = calc_cord((x + BLOCK_SIZE + 2, y + 2))
+        right = Node(pos_x, pos_y)
+        # TOP of current cell
+        pos_x, pos_y = calc_cord((x + 2, y - 2))
+        top = Node(pos_x, pos_y)
+        # BOTTOM of current cell
+        pos_x, pos_y = calc_cord((x + 2, y + BLOCK_SIZE + 2))
+        bottom = Node(pos_x, pos_y)
         # dtl - diagonal top left
-        # dtr - diagonal top right and so on
-        dtl = Node(calc_center(x - 2, y - 2))
-        dtr = Node(calc_center(x + BLOCK_SIZE + 2, y - 2))
-        dbl = Node(calc_center(x - 2, y + BLOCK_SIZE + 2))
-        dbr = Node(calc_center(x + BLOCK_SIZE + 2, y + BLOCK_SIZE + 2))
+        pos_x, pos_y = calc_cord((x - 2, y - 2))
+        dtl = Node(pos_x, pos_y)
+        # dtr - diagonal top right
+        pos_x, pos_y = calc_cord((x + BLOCK_SIZE + 2, y - 2))
+        dtr = Node(pos_x, pos_y)
+        # dbl - diagonal bottom left
+        pos_x, pos_y = calc_cord((x - 2, y + BLOCK_SIZE + 2))
+        dbl = Node(pos_x, pos_y)
+        # dbr - diagonal bottom right
+        pos_x, pos_y = calc_cord((x + BLOCK_SIZE + 2, y + BLOCK_SIZE + 2))
+        dbr = Node(pos_x, pos_y)
 
+        #  return list of all cells
         return [left, right, top, bottom, dtl, dtr, dbl, dbr]
 
 
-
 def is_pixel_black(pos):
-    return not screen.get_at(pos)[:3] == WALL
+    try:
+        return screen.get_at(pos)[:3] == WALL
+    except IndexError:
+        return True
+
+
+def is_cell_valid(pos):
+    # get x and y value from pos
+    x, y = pos
+    # convert pos to integer values
+    x, y = int(x), int(y)
+
+    center = calc_center(x, y)
+    if 0 > center[0] > WIN_WIDTH:
+        return False
+    if 0 > center[1] > WIN_HEIGHT:
+        return False
+
+    # if cell is out of x bounds - return false - not valid
+    if 0 > x > WIN_WIDTH:
+        return False
+    # if cell is out of y bounds - return false - not valid
+    if 0 > y > WIN_HEIGHT:
+        return False
+    # if cell is a wall, return false - not valid
+    if is_pixel_black((x + 1, y + 1)):
+        return False
+
+    # if all the above if conditions fail, cell is valid - return true
+    return True
 
 
 def distance(pos1, pos2):
     x1, x2 = pos1[0], pos2[0]
     y1, y2 = pos1[1], pos2[1]
 
-    delx = x2 - x1
-    dely = y2 - y1
-    return int(math.sqrt(pow(delx, 2) + pow(dely, 2)))
+    del_x = x2 - x1
+    del_y = y2 - y1
+    return int(math.sqrt(pow(del_x, 2) + pow(del_y, 2)))
 
 
+# given x and y variables calculate the center of the cell
 def calc_center(x1, y1):
     x, y = calc_cord((x1, y1))
     x = int(x + (BLOCK_SIZE / 2))
     y = int(y + (BLOCK_SIZE / 2))
-    return (x, y)
-
-
+    return x, y
