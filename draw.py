@@ -212,7 +212,7 @@ class Draw:
                         set_rect((cell.x, cell.y), CYAN)
 
                     t_surface = font.render(str(int(cell.total_cost)), False, BLACK)
-                    screen.blit(t_surface, (cell.x - 10, cell.y))
+                    screen.blit(t_surface, (cell.x + 10, cell.y))
 
                 pygame.display.flip()
 
