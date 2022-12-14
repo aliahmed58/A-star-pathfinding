@@ -7,7 +7,8 @@ Visualizing the A* search algorithm in pygame. :)
 - **G cost** = 14 if cell is diagonal else G cost = 10
 - **Total cost** = H cost + G cost
 
-
+To allow diagonal movement, set `diagonal_allowed = 
+True` in `constants.py`.
 
 ### How to run:
 - Install required packages by `pip install -r 

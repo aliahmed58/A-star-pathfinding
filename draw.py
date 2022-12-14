@@ -174,10 +174,16 @@ class Draw:
                     if is_cell_valid((cell.x, cell.y)):
                         # if the cell is diagonal give it a higher g_cost +
                         # the selected node's g_cost
-                        if cell.diagonal:
-                            cell.g_cost = node.g_cost + 14
+                        if diagonal_allowed:
+                            if cell.diagonal:
+                                cell.g_cost = node.g_cost + 14
+                            else:
+                                cell.g_cost = node.g_cost + 10
                         else:
-                            cell.g_cost = node.g_cost + 10
+                            if cell.diagonal:
+                                continue
+                            else:
+                                cell.g_cost = node.g_cost + 10
                     # if the cell is invalid, skip
                     else:
                         continue
@@ -242,15 +248,19 @@ class Draw:
         # dtl - diagonal top left
         pos_x, pos_y = calc_cord((x - 2, y - 2))
         dtl = Node(pos_x, pos_y)
+        dtl.diagonal = True
         # dtr - diagonal top right
         pos_x, pos_y = calc_cord((x + BLOCK_SIZE + 2, y - 2))
         dtr = Node(pos_x, pos_y)
+        dtr.diagonal = True
         # dbl - diagonal bottom left
         pos_x, pos_y = calc_cord((x - 2, y + BLOCK_SIZE + 2))
         dbl = Node(pos_x, pos_y)
+        dbl.diagonal = True
         # dbr - diagonal bottom right
         pos_x, pos_y = calc_cord((x + BLOCK_SIZE + 2, y + BLOCK_SIZE + 2))
         dbr = Node(pos_x, pos_y)
+        dbr.diagonal = True 
 
         #  return list of all cells
         return [left, right, top, bottom, dtl, dtr, dbl, dbr]
